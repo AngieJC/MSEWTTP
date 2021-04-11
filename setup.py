@@ -6,7 +6,10 @@
 
 from lib import Setup
 
-params = Setup(2048, 180)
+[params, g, BF] = Setup(2048, 180)
 params_file = open('./params.dat', 'w')
 print(params, file = params_file)
 params_file.close()
+g_file = open('./g.dat', 'w')
+print(g, file = g_file)
+g_file.close()
