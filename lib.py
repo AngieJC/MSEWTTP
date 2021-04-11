@@ -38,7 +38,7 @@ def Setup(qbits, rbits):
     return params
     
 
-
+'''
 def KeyGen(qbits, rbits):
     params = Parameters(qbits=qbits, rbits=rbits)
     pairing = Pairing(params)
@@ -46,3 +46,11 @@ def KeyGen(qbits, rbits):
     sk = Element.random(pairing, Zr)
     pk = Element(pairing, G2, value=g ** sk)
     return [params, g, pk, sk]
+'''
+# 密钥生成算法，输入公共参数params，输出公私钥对(pk = g^x, sk = x)
+def KeyGen(params):
+    pairing = Pairing(params)
+    g = Element.random(pairing, G2)
+    sk = Element.random(pairing, Zr)
+    pk = Element(pairing, G2, value = g**sk)
+    return [pk, sk]
