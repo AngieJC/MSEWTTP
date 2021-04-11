@@ -67,6 +67,9 @@ def EncData(D_i_c__l, W_i_c__l, PK_s, params, g):
     pairing = Pairing(params)
     #g = Element.random(pairing, G2)
     DR_i_c__l = Element.random(pairing, Zr)
+    DR_i_c__l_file = open(D_i_c__l + ".DR_i_c__l", 'w')
+    print(DR_i_c__l, file = DR_i_c__l_file)
+    DR_i_c__l_file.close()
     DK_i_c__l = pairing.apply(g**DR_i_c__l, PK_s)
     DK_i_c__l = bytes(Hash1(str(DK_i_c__l).encode('utf-8')).hexdigest(), encoding="utf-8")[:16]
     AES_SECRET_KEY = pad(DK_i_c__l, 32)
