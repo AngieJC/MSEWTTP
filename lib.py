@@ -101,8 +101,35 @@ def EncData(D_i_c__l, W_i_c__l, PK_s, params, g):
     bf_message = bf_file.read()
     bf_file.close()
     bf_s = AESObj.encrypt(pad(bf_message, AES.block_size))
-    encoded_bf_file = open("Enc"+D_i_c__l+".bloom.enc", 'wb')
+    encoded_bf_file = open("Enc"+D_i_c__l+".bloom_enc", 'wb')
     encoded_bf_file.write(bf_s)
     encoded_bf_file.close()
     bf.close()
     os.remove("Enc"+D_i_c__l+".bloom")
+
+
+# 索引生成算法，输入倒排索引和数据拥有者私钥，输出加密索引
+# IW_i_c__k是一个列表，列表的第一个元素是关键字，其余元素是包含该关键字的文档名
+def BuildIndex(IW_i_c__k, SK, params, g):
+    pairing = Pairing(params)
+    #g = Element.random(pairing, G2)
+    #CR_i_c = Element.random(pairing, Zr)
+    route_word = IW_i_c__k[1].split('/')
+    route = ''
+    i = 0
+    while i < len(route_word) - 1:
+        route = route + route_word[i] + '/'
+        i = i + 1
+    if os.path.exists(route + route_word[-2] + ".random"):
+        # 从文件中读取随机数
+        CR_i_c_file = open(route + route_word[-2] + ".random", 'r')
+        CR_i_c = CR_i_c_file.read()
+        CR_i_c_file.close()
+        CR_i_c = CR_i_c.split('\n')[0]
+        CR_i_c = int(CR_i_c, 16)
+        CR_i_c = Element(pairing, Zr, value = CR_i_c)
+    else:
+        CR_i_c = Element.random(pairing, Zr)
+        CR_i_c_file = open(route + route_word[-2] + ".random", 'w')
+        print(CR_i_c, file = CR_i_c_file)
+        CR_i_c_file.close()
