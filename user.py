@@ -6,6 +6,7 @@
 
 from lib import *
 
+# init
 params_file = open("params.dat", 'r')
 params = Parameters(param_string = params_file.read())
 pairing = Pairing(params)
@@ -14,3 +15,4 @@ g_file = open("g.dat", 'r')
 g = g_file.read().split('\n')[0]
 g_file.close()
 g = Element(pairing, G1, value = g)
+[PK, SK] = KeyGen(params, g)

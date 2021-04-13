@@ -167,6 +167,23 @@ def BuildIndex(IW_i_c__k, IDs, SK, PK_s, params, g):
     return [[c1, c2], set_of_id_D_i_c__l]
 
 
+# 用户授权算法，输入自己的私钥，目标用户的公钥，输出授权信息
+# SK_i是自己的私钥，PK_j是用户j的公钥
+def Auth(SK_i, PK_j, params, g, Random):
+    pairing = Pairing(params)
+    return Element(pairing, G1, value = PK_j**(Random / SK_i))
+
+
+# 搜索陷门生成算法，搜索用户输入明文关键字，私钥，服务器的公钥，输出陷门信息
+def Trapdoor(w_q, SK_j, params, g, PK_s):
+    pairing = Pairing(params)
+    r = Element.random(pairing, Zr)
+    T1 = Element(pairing, G1, value = Hash1(w_q.encode('utf-8')).hexdigest())**(r / SK_j)
+    T2 = PK_s**r
+
+
+# 搜索查询算法，输入
+
 
 
 
