@@ -10,6 +10,7 @@ import pickle
 import fileinput
 import pandas as pd
 import time
+import json
 
 from pypbc import *
 from pybloomfilter import *
@@ -38,7 +39,7 @@ def Setup(qbits, rbits):
     #print(params, file = params_file)
     #params_file.close()
     pairing = Pairing(params)
-    g = Element.random(pairing, G2)
+    g = Element.random(pairing, G1)
     #BloomFilter(100000, 0.01, 'bf.bloom')
     return [params, g]
     
@@ -57,7 +58,7 @@ def KeyGen(params, g):
     pairing = Pairing(params)
     #g = Element.random(pairing, G2)
     SK = Element.random(pairing, Zr)
-    PK = Element(pairing, G2, value = g**SK)
+    PK = Element(pairing, G1, value = g**SK)
     return [PK, SK]
 
 
@@ -71,8 +72,9 @@ def EncData(D_i_c__l, W_i_c__l, PK_s, params, g):
     print(DR_i_c__l, file = DR_i_c__l_file)
     DR_i_c__l_file.close()
     DK_i_c__l = pairing.apply(g**DR_i_c__l, PK_s)
-    DK_i_c__l = bytes(Hash1(str(DK_i_c__l).encode('utf-8')).hexdigest(), encoding="utf-8")[:16]
-    AES_SECRET_KEY = pad(DK_i_c__l, 32)
+    DK_i_c__l_str = bytes(Hash1(str(DK_i_c__l).encode('utf-8')).hexdigest(), encoding="utf-8")[:31]
+    #DK_i_c__l_str = Hash1(str(DK_i_c__l).encode('utf-8')).hexdigest()
+    AES_SECRET_KEY = pad(DK_i_c__l_str, 32)
     '''
     keywords1="document1"
     data1 = keywords1.encode('utf-8')
@@ -109,8 +111,9 @@ def EncData(D_i_c__l, W_i_c__l, PK_s, params, g):
 
 
 # 索引生成算法，输入倒排索引和数据拥有者私钥，输出加密索引
-# IW_i_c__k是一个列表，列表的第一个元素是关键字，其余元素是包含该关键字的文档名
-def BuildIndex(IW_i_c__k, SK, params, g):
+# IW_i_c__k是一个列表，列表的第一个元素是关键字，其余元素是包含该关键字的密文文档名
+# IDs为所有加密文档的哈希值
+def BuildIndex(IW_i_c__k, IDs, SK, PK_s, params, g):
     pairing = Pairing(params)
     #g = Element.random(pairing, G2)
     #CR_i_c = Element.random(pairing, Zr)
@@ -133,3 +136,69 @@ def BuildIndex(IW_i_c__k, SK, params, g):
         CR_i_c_file = open(route + route_word[-2] + ".random", 'w')
         print(CR_i_c, file = CR_i_c_file)
         CR_i_c_file.close()
+        '''
+        CR_i_c_file = open(route + route_word[-2] + ".random", 'r')
+        CR_i_c = int(CR_i_c_file.read(), 16)
+        CR_i_c_file.close()
+        '''
+    hash_IW_i_c__k = Hash1(IW_i_c__k[0].encode('utf-8')).hexdigest()
+    temp = open("temp", 'w')
+    print(hash_IW_i_c__k, file = temp)
+    temp.close()
+    temp = open("temp", 'r')
+    hash_IW_i_c__k = temp.read()
+    hash_IW_i_c__k = Element.from_hash(pairing, Zr, hash_IW_i_c__k)
+    temp.close()
+    os.remove("temp")
+    #SK = Element_to_int(SK)
+    #PK_s = Element_to_int(PK_s)
+    #g = Element_to_int(g)
+    c1 = Element(pairing, G1, value = (hash_IW_i_c__k**(CR_i_c / SK))) * Element(pairing, G1, value = (PK_s**CR_i_c))
+    c2 = g**CR_i_c
+    #print(hash_IW_i_c__k)
+    #c1 = (hash_IW_i_c__k**(CR_i_c/SK)) * (PK_s**CR_i_c)
+    #c2 = g**CR_i_c
+    # set_of_id_D_i_c__l
+    set_of_id_D_i_c__l = []
+    i = 1
+    while i < len(IW_i_c__k):
+        set_of_id_D_i_c__l.append(IDs[IW_i_c__k[i]])
+        i = i + 1
+    return [[c1, c2], set_of_id_D_i_c__l]
+
+
+
+
+
+
+####################################
+# 辅助性函数，非论文中所提到的函数 #
+####################################
+
+# 输入目录，输出目录中所有加密文档的哈希值
+def Get_File_ID(path):
+    IDs = {}
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if os.path.splitext(file)[1] == '.enc':
+                encoded_file = open(path + file, 'rb')
+                s_message = encoded_file.read()
+                encoded_file.close()
+                hash_value = Hash1(s_message).hexdigest()
+                IDs[file] = hash_value
+    IDs_jsObj = json.dumps(IDs)
+    IDs_jsObj_file = open(path + "IDs.json", 'w')
+    IDs_jsObj_file.write(IDs_jsObj)
+    IDs_jsObj_file.close()
+    return IDs
+
+# 将Element对象转为数字
+def Element_to_int(ElementObj):
+    ElementObj_file = open('ElementObj', 'w')
+    print(ElementObj, file = ElementObj_file)
+    ElementObj_file.close()
+    ElementObj_file = open('ElementObj', 'r')
+    intObj = int(ElementObj_file.read(), 16)
+    ElementObj_file.close()
+    os.remove("ElementObj")
+    return intObj

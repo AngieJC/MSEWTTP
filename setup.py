@@ -6,7 +6,7 @@
 
 from lib import Setup
 
-[params, g, BF] = Setup(2048, 180)
+[params, g] = Setup(1024, 180)
 params_file = open('./params.dat', 'w')
 print(params, file = params_file)
 params_file.close()
