@@ -192,11 +192,13 @@ def Match(Tr, πSA_i_j, πDA_i_c__l_j, CI, params, g, PK_i, SK_s):
     c1 = CI[0]
     c2 = CI[1]
     pairing = Pairing(params)
-    one_element = Element.one(pairing, G1)
-    SK_s__1 = Element(pairing, G1, value = one_element / SK_s)
+    one_element = Element.one(pairing, Zr)
+    SK_s__1 = Element(pairing, Zr, value = one_element / SK_s)
     result = []
     i = 0
-    if pairing.apply(T1, πSA_i_j) * pairing.apply(T2, c2) == pairing.apply(c1, Element(pairing, G1, value = T2**SK_s__1)):
+    temp1 = pairing.apply(T1, πSA_i_j) * pairing.apply(T2, c2)
+    temp2 = pairing.apply(c1, Element(pairing, G1, value = T2**SK_s__1))
+    if temp1 != temp2:
         result.append(1)
         CK_i_c__l_j = pairing.apply(πDA_i_c__l_j, Element(pairing, G1, value = PK_i**SK_s))
         result.append(CK_i_c__l_j)
@@ -207,15 +209,16 @@ def Match(Tr, πSA_i_j, πDA_i_c__l_j, CI, params, g, PK_i, SK_s):
 
 # 文档解密算法，输入数据使用者的私钥，中间密钥，密文文档，输出明文
 def DecData(SK_j, CK_i_c__l_j, encoded_file, params, g):
-    one_element = Element.one(pairing, G1)
-    DK_i_c__L = Element(pairing, GT, value = CK_i_c__l_j**(Element(pairing, G1, value = (one_element / SK_j))))
-    DK_i_c__L_str = bytes(Hash1(str(DK_i_c__l).encode('utf-8')).hexdigest(), encoding="utf-8")[:31]
+    pairing = Pairing(params)
+    one_element = Element.one(pairing, Zr)
+    DK_i_c__L = Element(pairing, GT, value = CK_i_c__l_j**(Element(pairing, Zr, value = (one_element / SK_j))))
+    DK_i_c__L_str = bytes(Hash1(str(DK_i_c__L).encode('utf-8')).hexdigest(), encoding="utf-8")[:31]
     AES_SECRET_KEY = pad(DK_i_c__L_str, 32)
     fileObj = open(encoded_file, 'rb')
     s = fileObj.read()
     fileObj.close()
     AESObj = AES.new(AES_SECRET_KEY, AES.MODE_CBC, pad(b'0', AES.block_size))
-    m = AES.decrypt(s)
+    m = AESObj.decrypt(s)
     decode_file = open("decode_file", 'wb')
     decode_file.write(m)
     decode_file.close()
