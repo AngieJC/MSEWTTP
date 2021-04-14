@@ -143,19 +143,27 @@ def BuildIndex(IW_i_c__k, IDs, SK, PK_s, params, g):
         CR_i_c_file.close()
         '''
     hash_IW_i_c__k = Hash1(IW_i_c__k[0].encode('utf-8')).hexdigest()
+    #print(hash_IW_i_c__k)
+    '''
     temp = open("temp", 'w')
     print(hash_IW_i_c__k, file = temp)
     temp.close()
     temp = open("temp", 'r')
     hash_IW_i_c__k = temp.read()
-    hash_IW_i_c__k = Element.from_hash(pairing, Zr, hash_IW_i_c__k)
+    '''
+    #print(hash_IW_i_c__k)
+    hash_IW_i_c__k = Element.from_hash(pairing, G1, hash_IW_i_c__k)
+    #print(hash_IW_i_c__k)
+    '''
     temp.close()
     os.remove("temp")
+    '''
     #SK = Element_to_int(SK)
     #PK_s = Element_to_int(PK_s)
     #g = Element_to_int(g)
-    c1 = Element(pairing, G1, value = (hash_IW_i_c__k**(CR_i_c / SK))) * Element(pairing, G1, value = (PK_s**CR_i_c))
-    c2 = g**CR_i_c
+    #c1 = Element(pairing, G1, value = (hash_IW_i_c__k**(CR_i_c / SK))) * Element(pairing, G1, value = (PK_s**CR_i_c))
+    c1 = Element(pairing, G1, value = (hash_IW_i_c__k**(Element(pairing, Zr, value = (CR_i_c / SK)))) * Element(pairing, G1, value = (PK_s**CR_i_c)))
+    c2 = Element(pairing, G1, value = g**CR_i_c)
     #print(hash_IW_i_c__k)
     #c1 = (hash_IW_i_c__k**(CR_i_c/SK)) * (PK_s**CR_i_c)
     #c2 = g**CR_i_c
@@ -172,15 +180,29 @@ def BuildIndex(IW_i_c__k, IDs, SK, PK_s, params, g):
 # SK_i是自己的私钥，PK_j是用户j的公钥
 def Auth(SK_i, PK_j, params, g, Random):
     pairing = Pairing(params)
-    return Element(pairing, G1, value = PK_j**(Random / SK_i))
+    return Element(pairing, G1, value = PK_j**Element(pairing, Zr, value = (Random / SK_i)))
 
 
 # 搜索陷门生成算法，搜索用户输入明文关键字，私钥，服务器的公钥，输出陷门信息
 def Trapdoor(w_q, SK_j, params, g, PK_s):
     pairing = Pairing(params)
     r = Element.random(pairing, Zr)
-    T1 = Element(pairing, G1, value = Hash1(w_q.encode('utf-8')).hexdigest())**(r / SK_j)
-    T2 = PK_s**r
+    #T1 = Element(pairing, G1, value = Hash1(w_q.encode('utf-8')).hexdigest())**(r / SK_j)
+    '''
+    temp = open("temp", 'w')
+    print(Hash1(w_q.encode('utf-8')).hexdigest(), file = temp)
+    temp.close()
+    temp = open("temp", 'r')
+    hash_IW_i_c__k = temp.read()
+    temp.close()
+    os.remove("temp")
+    '''
+    hash_IW_i_c__k = Hash1(w_q.encode('utf-8')).hexdigest()
+    #print(hash_IW_i_c__k)
+    T1 = Element.from_hash(pairing, G1, hash_IW_i_c__k)
+    T1 = Element(pairing, G1, value = T1**Element(pairing, Zr, value = r / SK_j))
+    #print(T1)
+    T2 = Element(pairing, G1, value = PK_s**r)
     return [T1, T2]
 
 
@@ -198,7 +220,7 @@ def Match(Tr, πSA_i_j, πDA_i_c__l_j, CI, params, g, PK_i, SK_s):
     i = 0
     temp1 = pairing.apply(T1, πSA_i_j) * pairing.apply(T2, c2)
     temp2 = pairing.apply(c1, Element(pairing, G1, value = T2**SK_s__1))
-    if temp1 != temp2:
+    if temp1 == temp2:
         result.append(1)
         CK_i_c__l_j = pairing.apply(πDA_i_c__l_j, Element(pairing, G1, value = PK_i**SK_s))
         result.append(CK_i_c__l_j)

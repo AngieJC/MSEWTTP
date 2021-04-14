@@ -18,6 +18,11 @@ IDs = Get_File_ID("1/Data/Music/")
 [[c1, c2], set_of_id_D_i_c__l] = BuildIndex(["孙燕姿", "1/Data/Music/孙燕姿 - 风衣.flac.enc"], IDs, SK_1, PK_s, params, g)
 πSA_i_j = Auth(SK_1, PK_2, params, g, CR_i_c)
 πDA_i_j = Auth(SK_1, PK_2, params, g, DR_i_c__l)
+
+[T1, T2] = Trapdoor("田馥甄", SK_2, params, g, PK_s)
+result = Match([T1, T2], πSA_i_j, πDA_i_j, [c1, c2], params, g, PK_1, SK_s)
+
 [T1, T2] = Trapdoor("孙燕姿", SK_2, params, g, PK_s)
 result = Match([T1, T2], πSA_i_j, πDA_i_j, [c1, c2], params, g, PK_1, SK_s)
+
 DecData(SK_2, result[1], "1/Data/Music/孙燕姿 - 风衣.flac.enc", params, g)
