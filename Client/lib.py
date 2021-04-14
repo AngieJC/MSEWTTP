@@ -185,15 +185,24 @@ def Trapdoor(w_q, SK_j, params, g, PK_s):
 
 
 # 搜索查询算法，输入陷门，授权信息数组，查询者的id，输出中间密钥
-def Match(Tr, A, j, params, g, PK_i, SK_s):
+# Tr为查询陷门，πSA_i_j为一个分类的查询授权信息，πDA_i_c__l_j为文档解密与验证授权信息，CI为密文关键字
+def Match(Tr, πSA_i_j, πDA_i_c__l_j, CI, params, g, PK_i, SK_s):
+    T1 = Tr[0]
+    T2 = Tr[1]
+    c1 = CI[0]
+    c2 = CI[1]
     pairing = Pairing(params)
-    CK_i_c__l_js = []
-    for i in range(A.shape[0]):
-        for k in range(len(A[i][j][1])):
-            if A[i][j][1][k] != 0:
-                CK_i_c__l_j = pairing.apply(A[i][j][1][k][0], Element(pairing, G1, value = PK_i**SK_s))
-                CK_i_c__l_js.append([CK_i_c__l_j, A[i][j][1][k][1]])
-    return CK_i_c__l_j
+    one_element = Element.one(pairing, G1)
+    SK_s__1 = Element(pairing, G1, value = one_element / SK_s)
+    result = []
+    i = 0
+    if pairing.apply(T1, πSA_i_j) * pairing.apply(T2, c2) == pairing.apply(c1, Element(pairing, G1, value = T2**SK_s__1)):
+        result.append(1)
+        CK_i_c__l_j = pairing.apply(πDA_i_c__l_j, Element(pairing, G1, value = PK_i**SK_s))
+        result.append(CK_i_c__l_j)
+    else:
+        result.append(0)
+    return result
 
 
 # 文档解密算法，输入数据使用者的私钥，中间密钥，密文文档，输出明文

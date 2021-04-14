@@ -4,7 +4,7 @@
 # e-Mail: htk90uggk@outlook.com
 # Description: Client
 # Usage: python3 user.py init|encode UID
-#        python3 user.py auth UID_i UID_j
+#        python3 user.py auth UID_i UID_j file
 
 from lib import *
 import sys
@@ -48,4 +48,5 @@ elif sys.argv[1] == "encode":
     [[c1, c2], set_of_id_D_i_c__l] = BuildIndex(["孙燕姿", str(UID) + "/Data/Music/孙燕姿 - 风衣.flac.enc"], IDs, SK, PK, params, g)
 elif sys.argv[1] == "auth":
     UID_j = int(sys.argv[3])
+    file_path = sys.argv[4]
     [PK, SK] = GetK(UID)
