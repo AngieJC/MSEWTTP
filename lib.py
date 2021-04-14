@@ -73,6 +73,7 @@ def EncData(D_i_c__l, W_i_c__l, PK_s, params, g):
     DR_i_c__l_file.close()
     DK_i_c__l = pairing.apply(g**DR_i_c__l, PK_s)
     DK_i_c__l_str = bytes(Hash1(str(DK_i_c__l).encode('utf-8')).hexdigest(), encoding="utf-8")[:31]
+    #print(Hash1(str(DK_i_c__l).encode('utf-8')).hexdigest())
     #DK_i_c__l_str = Hash1(str(DK_i_c__l).encode('utf-8')).hexdigest()
     AES_SECRET_KEY = pad(DK_i_c__l_str, 32)
     '''
@@ -86,7 +87,7 @@ def EncData(D_i_c__l, W_i_c__l, PK_s, params, g):
     target_file.close()
     AESObj = AES.new(AES_SECRET_KEY, AES.MODE_CBC, pad(b'0', AES.block_size))
     s = AESObj.encrypt(pad(m, AES.block_size))
-    encoded_file = open("Enc"+D_i_c__l+".enc", 'wb')
+    encoded_file = open(D_i_c__l+".enc", 'wb')
     encoded_file.write(s)
     encoded_file.close()
     '''
@@ -97,17 +98,17 @@ def EncData(D_i_c__l, W_i_c__l, PK_s, params, g):
     '''
     
     # 生成布隆过滤器并加密
-    bf = BloomFilter(100, 0.001, "Enc"+D_i_c__l+".bloom")
+    bf = BloomFilter(100, 0.001, D_i_c__l+".bloom")
     bf.update(W_i_c__l)
-    bf_file = open("Enc"+D_i_c__l+".bloom", 'rb')
+    bf_file = open(D_i_c__l+".bloom", 'rb')
     bf_message = bf_file.read()
     bf_file.close()
     bf_s = AESObj.encrypt(pad(bf_message, AES.block_size))
-    encoded_bf_file = open("Enc"+D_i_c__l+".bloom_enc", 'wb')
+    encoded_bf_file = open(D_i_c__l+".bloom_enc", 'wb')
     encoded_bf_file.write(bf_s)
     encoded_bf_file.close()
     bf.close()
-    os.remove("Enc"+D_i_c__l+".bloom")
+    os.remove(D_i_c__l+".bloom")
 
 
 # 索引生成算法，输入倒排索引和数据拥有者私钥，输出加密索引
@@ -142,19 +143,27 @@ def BuildIndex(IW_i_c__k, IDs, SK, PK_s, params, g):
         CR_i_c_file.close()
         '''
     hash_IW_i_c__k = Hash1(IW_i_c__k[0].encode('utf-8')).hexdigest()
+    #print(hash_IW_i_c__k)
+    '''
     temp = open("temp", 'w')
     print(hash_IW_i_c__k, file = temp)
     temp.close()
     temp = open("temp", 'r')
     hash_IW_i_c__k = temp.read()
-    hash_IW_i_c__k = Element.from_hash(pairing, Zr, hash_IW_i_c__k)
+    '''
+    #print(hash_IW_i_c__k)
+    hash_IW_i_c__k = Element.from_hash(pairing, G1, hash_IW_i_c__k)
+    #print(hash_IW_i_c__k)
+    '''
     temp.close()
     os.remove("temp")
+    '''
     #SK = Element_to_int(SK)
     #PK_s = Element_to_int(PK_s)
     #g = Element_to_int(g)
-    c1 = Element(pairing, G1, value = (hash_IW_i_c__k**(CR_i_c / SK))) * Element(pairing, G1, value = (PK_s**CR_i_c))
-    c2 = g**CR_i_c
+    #c1 = Element(pairing, G1, value = (hash_IW_i_c__k**(CR_i_c / SK))) * Element(pairing, G1, value = (PK_s**CR_i_c))
+    c1 = Element(pairing, G1, value = (hash_IW_i_c__k**(Element(pairing, Zr, value = (CR_i_c / SK)))) * Element(pairing, G1, value = (PK_s**CR_i_c)))
+    c2 = Element(pairing, G1, value = g**CR_i_c)
     #print(hash_IW_i_c__k)
     #c1 = (hash_IW_i_c__k**(CR_i_c/SK)) * (PK_s**CR_i_c)
     #c2 = g**CR_i_c
@@ -162,7 +171,7 @@ def BuildIndex(IW_i_c__k, IDs, SK, PK_s, params, g):
     set_of_id_D_i_c__l = []
     i = 1
     while i < len(IW_i_c__k):
-        set_of_id_D_i_c__l.append(IDs[IW_i_c__k[i]])
+        set_of_id_D_i_c__l.append(IDs[IW_i_c__k[i].split('/')[-1]])
         i = i + 1
     return [[c1, c2], set_of_id_D_i_c__l]
 
@@ -171,19 +180,70 @@ def BuildIndex(IW_i_c__k, IDs, SK, PK_s, params, g):
 # SK_i是自己的私钥，PK_j是用户j的公钥
 def Auth(SK_i, PK_j, params, g, Random):
     pairing = Pairing(params)
-    return Element(pairing, G1, value = PK_j**(Random / SK_i))
+    return Element(pairing, G1, value = PK_j**Element(pairing, Zr, value = (Random / SK_i)))
 
 
 # 搜索陷门生成算法，搜索用户输入明文关键字，私钥，服务器的公钥，输出陷门信息
 def Trapdoor(w_q, SK_j, params, g, PK_s):
     pairing = Pairing(params)
     r = Element.random(pairing, Zr)
-    T1 = Element(pairing, G1, value = Hash1(w_q.encode('utf-8')).hexdigest())**(r / SK_j)
-    T2 = PK_s**r
+    #T1 = Element(pairing, G1, value = Hash1(w_q.encode('utf-8')).hexdigest())**(r / SK_j)
+    '''
+    temp = open("temp", 'w')
+    print(Hash1(w_q.encode('utf-8')).hexdigest(), file = temp)
+    temp.close()
+    temp = open("temp", 'r')
+    hash_IW_i_c__k = temp.read()
+    temp.close()
+    os.remove("temp")
+    '''
+    hash_IW_i_c__k = Hash1(w_q.encode('utf-8')).hexdigest()
+    #print(hash_IW_i_c__k)
+    T1 = Element.from_hash(pairing, G1, hash_IW_i_c__k)
+    T1 = Element(pairing, G1, value = T1**Element(pairing, Zr, value = r / SK_j))
+    #print(T1)
+    T2 = Element(pairing, G1, value = PK_s**r)
+    return [T1, T2]
 
 
-# 搜索查询算法，输入
+# 搜索查询算法，输入陷门，授权信息数组，查询者的id，输出中间密钥
+# Tr为查询陷门，πSA_i_j为一个分类的查询授权信息，πDA_i_c__l_j为文档解密与验证授权信息，CI为密文关键字
+def Match(Tr, πSA_i_j, πDA_i_c__l_j, CI, params, g, PK_i, SK_s):
+    T1 = Tr[0]
+    T2 = Tr[1]
+    c1 = CI[0]
+    c2 = CI[1]
+    pairing = Pairing(params)
+    one_element = Element.one(pairing, Zr)
+    SK_s__1 = Element(pairing, Zr, value = one_element / SK_s)
+    result = []
+    i = 0
+    temp1 = pairing.apply(T1, πSA_i_j) * pairing.apply(T2, c2)
+    temp2 = pairing.apply(c1, Element(pairing, G1, value = T2**SK_s__1))
+    if temp1 == temp2:
+        result.append(1)
+        CK_i_c__l_j = pairing.apply(πDA_i_c__l_j, Element(pairing, G1, value = PK_i**SK_s))
+        result.append(CK_i_c__l_j)
+    else:
+        result.append(0)
+    return result
 
+
+# 文档解密算法，输入数据使用者的私钥，中间密钥，密文文档，输出明文
+def DecData(SK_j, CK_i_c__l_j, encoded_file, params, g):
+    pairing = Pairing(params)
+    one_element = Element.one(pairing, Zr)
+    DK_i_c__L = Element(pairing, GT, value = CK_i_c__l_j**(Element(pairing, Zr, value = (one_element / SK_j))))
+    DK_i_c__L_str = bytes(Hash1(str(DK_i_c__L).encode('utf-8')).hexdigest(), encoding="utf-8")[:31]
+    AES_SECRET_KEY = pad(DK_i_c__L_str, 32)
+    fileObj = open(encoded_file, 'rb')
+    s = fileObj.read()
+    fileObj.close()
+    AESObj = AES.new(AES_SECRET_KEY, AES.MODE_CBC, pad(b'0', AES.block_size))
+    m = AESObj.decrypt(s)
+    decode_file = open("decode_file", 'wb')
+    decode_file.write(m)
+    decode_file.close()
 
 
 
