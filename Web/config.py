@@ -1,0 +1,3 @@
+SQLALCHEMY_DATABASE_URI = "mysql://root:cjj123cjj@localhost/MSEWTTP"
+
+SQLALCHEMY_TRACK_MODIFICATIONS = False
